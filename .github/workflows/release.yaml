@@ -20,7 +20,7 @@ jobs:
           terraform_version: 1.2.1
 
       - name: Create tarballs and zips
-        run: ./release.sh $(git describe --tags --abbrev=0)
+        run: ./release.sh test
 
       - name: Log zip
         run: |
