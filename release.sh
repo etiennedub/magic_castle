@@ -2,6 +2,7 @@
 VERSION=$1
 shift
 CLOUD=($@)
+set -e
 
 if [ -z "$VERSION" ]; then
 	echo "Specify the release version number"
@@ -64,4 +65,3 @@ for provider in "${CLOUD[@]}"; do
 	cp $FOLDER/magic_castle-$provider-$VERSION.zip releases/
 done
 # rm -rf $TMPDIR
-
