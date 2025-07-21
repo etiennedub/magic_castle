@@ -16,22 +16,23 @@ module "design" {
 }
 
 module "configuration" {
-  source          = "../common/configuration"
-  inventory       = local.inventory
-  config_git_url  = var.config_git_url
-  config_version  = var.config_version
-  sudoer_username = var.sudoer_username
-  public_keys     = var.public_keys
-  domain_name     = module.design.domain_name
-  bastion_tag     = module.design.bastion_tag
-  cluster_name    = var.cluster_name
-  guest_passwd    = var.guest_passwd
-  nb_users        = var.nb_users
-  software_stack  = var.software_stack
-  cloud_provider  = local.cloud_provider
-  cloud_region    = local.cloud_region
-  skip_upgrade    = var.skip_upgrade
-  puppetfile      = var.puppetfile
+  source           = "../common/configuration"
+  inventory        = local.inventory
+  config_git_url   = var.config_git_url
+  config_version   = var.config_version
+  sudoer_username  = var.sudoer_username
+  public_keys      = var.public_keys
+  domain_name      = module.design.domain_name
+  bastion_tag      = module.design.bastion_tag
+  cluster_name     = var.cluster_name
+  guest_passwd     = var.guest_passwd
+  nb_users         = var.nb_users
+  software_stack   = var.software_stack
+  cloud_provider   = local.cloud_provider
+  cloud_region     = local.cloud_region
+  skip_upgrade     = var.skip_upgrade
+  puppetfile       = var.puppetfile
+  tailscale_config = var.tailscale_config
 }
 
 module "provision" {

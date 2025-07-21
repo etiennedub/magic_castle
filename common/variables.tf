@@ -169,3 +169,13 @@ variable "eyaml_key" {
     error_message = "Unsupported private key format"
   }
 }
+
+variable "tailscale_config" {
+  type = object({
+    domain      = string
+    device_name = string
+    auth_key    = string
+  })
+  default     = null
+  description = "Tailscale config"
+}

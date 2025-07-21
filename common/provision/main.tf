@@ -6,6 +6,7 @@ variable "puppetfile" {}
 
 locals {
   provision_folder = "etc_puppetlabs"
+  first_bastion    = var.configuration.bastions[keys(var.configuration.bastions)[0]]
 }
 
 data "archive_file" "puppetserver_files" {
@@ -58,9 +59,13 @@ resource "terraform_data" "deploy_puppetserver_files" {
   for_each = length(var.configuration.bastions) > 0 ? var.configuration.puppetservers : {}
 
   connection {
-    type                = "ssh"
-    agent               = false
-    bastion_host        = var.configuration.bastions[keys(var.configuration.bastions)[0]].public_ip
+    type  = "ssh"
+    agent = false
+    bastion_host = coalesce(
+      local.first_bastion.tailscale_domain,
+      local.first_bastion.public_ip
+    )
+    bastion_port        = local.first_bastion.ssh_port
     bastion_user        = "tf"
     bastion_private_key = var.configuration.ssh_key.private
     user                = "tf"
