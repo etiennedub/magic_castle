@@ -93,6 +93,8 @@ resource "incus_instance" "instances" {
   image   = try(incus_image.image[each.value.image].fingerprint, each.value.image)
   type    = each.value.type
 
+  target = try(each.value.target, null)
+
   config = {
     "cloud-init.user-data" = module.configuration.user_data[each.key]
     "security.privileged"  = var.privileged
