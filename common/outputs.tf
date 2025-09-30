@@ -2,6 +2,10 @@ output "public_instances" {
   value = module.configuration.public_instances
 }
 
+output "inventory" {
+  value = module.configuration.inventory
+}
+
 output "bastions" {
   value = module.configuration.bastions
 }

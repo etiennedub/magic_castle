@@ -26,6 +26,8 @@ variable "skip_upgrade" {}
 variable "puppetfile" {}
 variable "bastion_tag" {}
 
+variable "tailscale_config" {}
+
 resource "tls_private_key" "ssh" {
   algorithm = "ED25519"
 }
@@ -53,6 +55,7 @@ resource "random_pet" "guest_passwd" {
 }
 
 locals {
+
   puppet_passwd = random_string.puppet_passwd.result
   guest_passwd  = var.guest_passwd != "" ? var.guest_passwd : try(random_pet.guest_passwd[0].id, "")
   public_keys   = [for key in var.public_keys : trimspace(key)]
@@ -61,6 +64,9 @@ locals {
   tag_ip = { for tag in local.all_tags :
     tag => [for key, values in local.post_inventory : values.local_ip if contains(values.tags, tag)]
   }
+
+  is_using_tailscale = var.tailscale_config != null
+
 
   # add openssh public key to inventory
   final_inventory = { for host, values in local.post_inventory :
@@ -87,6 +93,23 @@ locals {
       }
     }
   })
+
+  # TODO: Check for only one public
+  public_hosts = {
+    for host, values in var.inventory : host => values
+    if contains(values.tags, "public")
+  }
+
+  bastion_config = {
+    tailscale_domain = local.is_using_tailscale ? "${var.tailscale_config.device_name}.${var.tailscale_config.domain}" : ""
+    ssh_port         = local.is_using_tailscale ? 10000 : 22
+  }
+
+
+  bastions = {
+    for host, values in local.final_inventory : host => merge(values, local.bastion_config)
+    if contains(values.tags, var.bastion_tag) && contains(values.tags, "public") && (!contains(values.tags, "pool"))
+  }
 
   terraform_facts = yamlencode({
     software_stack = var.software_stack,
@@ -122,6 +145,8 @@ locals {
             public  = chomp(tls_private_key.ed25519[values.prefix].public_key_openssh)
           }
         }
+
+        tailscale_config = contains([for host, values in local.public_hosts : host], key) ? var.tailscale_config : null
       }
     )
   }
@@ -160,10 +185,7 @@ output "ssh_key" {
 }
 
 output "bastions" {
-  value = {
-    for host, values in local.final_inventory : host => values
-    if contains(values.tags, var.bastion_tag) && contains(values.tags, "public") && (!contains(values.tags, "pool"))
-  }
+  value = local.bastions
 }
 
 output "public_instances" {

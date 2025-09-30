@@ -142,6 +142,16 @@ runcmd:
   # we can start puppet and skip reboot, reducing the delay for bringing the node up.
   - test -f /etc/magic-castle-release && systemctl start puppet || true
 
+%{ if tailscale_config != null }
+  - dnf install -y 'dnf-command(config-manager)'
+  - dnf config-manager --add-repo https://pkgs.tailscale.com/stable/rhel/9/tailscale.repo
+  - dnf install -y tailscale
+  - systemctl enable --now tailscaled
+  - tailscale up --authkey ${tailscale_config.auth_key} --hostname ${tailscale_config.device_name}
+  # Enable the Funnel feature (requires subnet router or exit node in some cases)
+  - systemctl enable --now tailscale-funnel
+%{ endif }
+
 write_files:
   # If the ip addresses of the puppet servers are not known in advance, we cannot restrict the ssh connection to them.
   - content: restrict,%{ if contains(tags, "puppet") }pty%{ else }%{if length(compact(values(puppetservers))) == length(keys(puppetservers)) }%{ for host, ip in puppetservers }permitopen="${ip}:22"%{ endfor }%{ else }pty%{ endif },port-forwarding,command="/sbin/nologin"%{ endif } ${tf_ssh_public_key}
@@ -223,6 +233,24 @@ write_files:
     path: /etc/puppetlabs/puppet/csr_attributes.yaml
     permissions: "0640"
     owner: root:root
+%{ if tailscale_config != null }
+  - path: /etc/systemd/system/tailscale-funnel.service
+    permissions: '0644'
+    content: |
+      [Unit]
+      Description=Tailscale Funnel Port 10000 for SSH
+      After=network-online.target tailscaled.service
+      Requires=tailscaled.service
+      Wants=network-online.target
+
+      [Service]
+      ExecStart=/usr/bin/tailscale funnel --yes --tcp 10000 tcp://127.0.0.1:22
+      Restart=on-failure
+
+      [Install]
+      WantedBy=multi-user.target
+%{ endif ~}
+
 
 ssh_keys:
 %{ for key, values in hostkeys ~}
